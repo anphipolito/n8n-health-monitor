@@ -23,26 +23,29 @@ def check_no_sticky_note_doc(workflow):
         for node in workflow.get("nodes", [])
     )
     if has_sticky:
-    
+        stick_notes = [node for node in workflow.get("nodes", []) if node.get("type") == "n8n-nodes-base.stickyNote"]
         #Check if the sticky note content is the default placeholder text, which indicates it's likely not being used for documentation
-        if has_sticky[0].get("parameters", {}).get("content", "").strip() != "## I'm a note\n**Double click** to edit me. [Guide](https://docs.n8n.io/workflows/components/sticky-notes/)":
-            return []
-        elif has_sticky[0].get("parameters", {}).get("content", "").strip() == "## I'm a note\n**Double click** to edit me. [Guide](https://docs.n8n.io/workflows/components/sticky-notes/)":
-            return [{
-                "rule_name": "no_sticky_note_doc",
-                "severity": "low",
-                "workflow_id": workflow.get("workflow_id", "unknown"),
-                "message": "Workflow has a sticky note with default placeholder content, indicating it's likely not used for documentation.",
-                "detected_at": datetime.now(timezone.utc).isoformat(),
-            }]
-        elif has_sticky[0].get("parameters", {}).get("content", "").strip() == "":
-            return [{
-                "rule_name": "no_sticky_note_doc",
-                "severity": "low",
-                "workflow_id": workflow.get("workflow_id", "unknown"),
-                "message": "Workflow has a sticky note with empty content.",
-                "detected_at": datetime.now(timezone.utc).isoformat(),
-            }]
+        for sticky in stick_notes: 
+
+            if sticky.get("parameters", {}).get("content", "").strip() == "## I'm a note\n**Double click** to edit me. [Guide](https://docs.n8n.io/workflows/components/sticky-notes/)":
+                return [{
+                    "rule_name": "no_sticky_note_doc",
+                    "severity": "low",
+                    "workflow_id": workflow.get("workflow_id", "unknown"),
+                    "message": "Workflow has a sticky note with default placeholder content, indicating it's likely not used for documentation.",
+                    "detected_at": datetime.now(timezone.utc).isoformat(),
+                }]
+            elif sticky.get("parameters", {}).get("content", "").strip() == "":
+                return [{
+                    "rule_name": "no_sticky_note_doc",
+                    "severity": "low",
+                    "workflow_id": workflow.get("workflow_id", "unknown"),
+                    "message": "Workflow has a sticky note with empty content.",
+                    "detected_at": datetime.now(timezone.utc).isoformat(),
+                }]
+            else: 
+                return []  # At least one sticky note with non-placeholder content, so no issue
+        
     else: 
         # One issue per workflow — this is not a per-node check
         return [{
@@ -52,3 +55,4 @@ def check_no_sticky_note_doc(workflow):
             "message": "Workflow has no sticky note documentation.",
             "detected_at": datetime.now(timezone.utc).isoformat(),
         }]
+

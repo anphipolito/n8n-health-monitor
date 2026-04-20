@@ -5,3 +5,4 @@ __pycache__/
 *.pyc
 health-monitor/
 .prefect/
+rules/ai_node_no_validation.py

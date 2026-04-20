@@ -23,7 +23,6 @@ _INTERNAL_URL_PATTERN = re.compile(
     r'(?:localhost|127\.\d+\.\d+\.\d+|10\.\d+\.\d+\.\d+|192\.168\.\d+\.\d+|172\.(?:1[6-9]|2\d|3[01])\.\d+\.\d+)'
 )
 
-
 def _find_internal_urls(value):
     """Recursively search a parameters structure for internal URLs. Returns list of matched URLs."""
     if isinstance(value, str):
@@ -47,9 +46,9 @@ def _find_internal_urls(value):
 def check_no_env_var_separation(workflow):
     issues = []
     workflow_id = workflow.get("workflow_id", "unknown")
-
     for node in workflow.get("nodes", []):
-        urls = _find_internal_urls(node.get("parameters", {}))
+        parameters = node.get("parameters", {})
+        urls = _find_internal_urls(parameters)
 
         # Deduplicate per node: the same URL repeated in different fields
         # should produce only one issue to avoid alert noise
