@@ -10,12 +10,11 @@
 #               internal-only endpoints that don't need retries.
 # -----------------------------------------------------------------------------
 
-from datetime import datetime, timezone
+from rules.issue import Issue
 
 
 def check_no_retry_on_http(workflow):
     issues = []
-    workflow_id = workflow.get("workflow_id", "unknown")
 
     for node in workflow.get("nodes", []):
         # n8n HTTP Request nodes carry "httpRequest" in their type string
@@ -26,12 +25,10 @@ def check_no_retry_on_http(workflow):
         # retryOnFail is a top-level node property, not inside parameters;
         # missing key is treated the same as False (not configured)
         if not node.get("retryOnFail", False):
-            issues.append({
-                "rule_name": "no_retry_on_http",
-                "severity": "medium",
-                "workflow_id": workflow_id,
-                "message": f"Node '{node.get('name', node.get('id', 'unknown'))}' is an HTTP Request node with no retry on failure.",
-                "detected_at": datetime.now(timezone.utc).isoformat(),
-            })
+            issues.append(Issue(
+                rule_name="no_retry_on_http",
+                severity="medium",
+                message=f"Node '{node.get('name', node.get('id', 'unknown'))}' is an HTTP Request node with no retry on failure.",
+            ))
 
     return issues

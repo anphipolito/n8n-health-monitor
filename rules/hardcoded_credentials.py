@@ -18,7 +18,8 @@
 # -----------------------------------------------------------------------------
 
 import re
-from datetime import datetime, timezone
+
+from rules.issue import Issue
 
 # Parameter key names that commonly hold credentials.
 # Case-insensitive so "Password", "API_KEY", "Authorization" all match.
@@ -44,53 +45,38 @@ _CREDENTIAL_VALUE_PATTERN = re.compile(
 _N8N_EXPRESSION = re.compile(r'^\s*=\s*\{')
 
 
-def _scan_parameters(params, node_name, workflow_id, issues):
+def _scan_parameters(params, node_name, issues):
     """Recursively walk parameters, flagging suspicious key/value pairs."""
     if isinstance(params, dict):
         for key, value in params.items():
             if isinstance(value, str) and not _N8N_EXPRESSION.match(value):
                 # Key-name check: flag regardless of value content
                 if _SENSITIVE_KEY_PATTERN.search(key):
-                    issues.append({
-                        "rule_name": "hardcoded_credentials",
-                        "severity": "high",
-                        "workflow_id": workflow_id,
-                        "message": f"Node '{node_name}' may contain a hardcoded credential in parameter '{key}'.",
-                        "detected_at": None,  # filled by caller with a single timestamp
-                    })
+                    issues.append(Issue(
+                        rule_name="hardcoded_credentials",
+                        severity="high",
+                        message=f"Node '{node_name}' may contain a hardcoded credential in parameter '{key}'.",
+                    ))
                 # Value-pattern check: key name is neutral but value looks like a secret
                 elif _CREDENTIAL_VALUE_PATTERN.search(value):
-                    issues.append({
-                        "rule_name": "hardcoded_credentials",
-                        "severity": "high",
-                        "workflow_id": workflow_id,
-                        "message": f"Node '{node_name}' may contain a hardcoded credential in parameter '{key}'.",
-                        "detected_at": None,
-                    })
+                    issues.append(Issue(
+                        rule_name="hardcoded_credentials",
+                        severity="high",
+                        message=f"Node '{node_name}' may contain a hardcoded credential in parameter '{key}'.",
+                    ))
             else:
                 # Value is not a plain string — recurse into nested dicts/lists
-                _scan_parameters(value, node_name, workflow_id, issues)
+                _scan_parameters(value, node_name, issues)
     elif isinstance(params, list):
         for item in params:
-            _scan_parameters(item, node_name, workflow_id, issues)
+            _scan_parameters(item, node_name, issues)
 
 
 def check_hardcoded_credentials(workflow):
     issues = []
-    workflow_id = workflow.get("workflow_id", "unknown")
-
-    # One timestamp for the entire run so all issues in this workflow share it
-    now = datetime.now(timezone.utc).isoformat()
 
     for node in workflow.get("nodes", []):
         node_name = node.get("name", node.get("id", "unknown"))
-        node_issues = []
-        _scan_parameters(node.get("parameters", {}), node_name, workflow_id, node_issues)
-
-        # Stamp detected_at here rather than inside the recursive helper
-        # to avoid repeated datetime.now() calls per issue
-        for issue in node_issues:
-            issue["detected_at"] = now
-        issues.extend(node_issues)
+        _scan_parameters(node.get("parameters", {}), node_name, issues)
 
     return issues

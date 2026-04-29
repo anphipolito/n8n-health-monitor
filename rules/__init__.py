@@ -1,3 +1,4 @@
+from rules.issue import Issue
 from rules.no_retry_on_http import check_no_retry_on_http
 from rules.no_sticky_note_doc import check_no_sticky_note_doc
 from rules.missing_error_handler import check_missing_error_handler

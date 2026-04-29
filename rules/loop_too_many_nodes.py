@@ -16,7 +16,8 @@
 # -----------------------------------------------------------------------------
 
 from collections import deque
-from datetime import datetime, timezone
+
+from rules.issue import Issue
 
 # n8n's "Loop Over Items" node has the internal type "splitInBatches".
 # "loopoveritems" is included for any community/renamed variants.
@@ -65,9 +66,7 @@ def _count_loop_body_nodes(loop_node_name, connections):
 
 def check_loop_too_many_nodes(workflow):
     issues = []
-    workflow_id = workflow.get("workflow_id", "unknown")
     connections = workflow.get("connections", {})
-    now = datetime.now(timezone.utc).isoformat()
 
     for node in workflow.get("nodes", []):
         if not _is_loop_node(node):
@@ -77,12 +76,10 @@ def check_loop_too_many_nodes(workflow):
         count = _count_loop_body_nodes(node_name, connections)
 
         if count > THRESHOLD:
-            issues.append({
-                "rule_name": "loop_too_many_nodes",
-                "severity": "medium",
-                "workflow_id": workflow_id,
-                "message": f"Loop node '{node_name}' has {count} connected nodes inside it (threshold: {THRESHOLD}).",
-                "detected_at": now,
-            })
+            issues.append(Issue(
+                rule_name="loop_too_many_nodes",
+                severity="medium",
+                message=f"Loop node '{node_name}' has {count} connected nodes inside it (threshold: {THRESHOLD}).",
+            ))
 
     return issues

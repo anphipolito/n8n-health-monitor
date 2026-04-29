@@ -14,7 +14,8 @@
 # -----------------------------------------------------------------------------
 
 import re
-from datetime import datetime, timezone
+
+from rules.issue import Issue
 
 # Matches http/https URLs pointing at localhost or private IP ranges.
 # RFC-1918 private ranges: 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16
@@ -45,7 +46,6 @@ def _find_internal_urls(value):
 
 def check_no_env_var_separation(workflow):
     issues = []
-    workflow_id = workflow.get("workflow_id", "unknown")
     for node in workflow.get("nodes", []):
         parameters = node.get("parameters", {})
         urls = _find_internal_urls(parameters)
@@ -57,12 +57,10 @@ def check_no_env_var_separation(workflow):
             if url in seen:
                 continue
             seen.add(url)
-            issues.append({
-                "rule_name": "no_env_var_separation",
-                "severity": "medium",
-                "workflow_id": workflow_id,
-                "message": f"Node '{node.get('name', node.get('id', 'unknown'))}' contains a hardcoded internal URL '{url}' in its parameters.",
-                "detected_at": datetime.now(timezone.utc).isoformat(),
-            })
+            issues.append(Issue(
+                rule_name="no_env_var_separation",
+                severity="medium",
+                message=f"Node '{node.get('name', node.get('id', 'unknown'))}' contains a hardcoded internal URL '{url}' in its parameters.",
+            ))
 
     return issues

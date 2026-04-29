@@ -12,7 +12,7 @@
 #               has any active execution nodes before flagging.
 # -----------------------------------------------------------------------------
 
-from datetime import datetime, timezone
+from rules.issue import Issue
 
 
 def check_missing_error_handler(workflow):
@@ -22,10 +22,8 @@ def check_missing_error_handler(workflow):
         return []
 
     # One issue per workflow — this is a global configuration gap, not per-node
-    return [{
-        "rule_name": "missing_error_handler",
-        "severity": "high",
-        "workflow_id": workflow.get("workflow_id", "unknown"),
-        "message": "Workflow has no error handler configured in settings.",
-        "detected_at": datetime.now(timezone.utc).isoformat(),
-    }]
+    return [Issue(
+        rule_name="missing_error_handler",
+        severity="high",
+        message="Workflow has no error handler configured in settings.",
+    )]
